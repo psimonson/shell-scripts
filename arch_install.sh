@@ -336,7 +336,7 @@ install_packages() {
     local packages=''
 
     # General utilities/libraries
-    packages+=' alsa-utils aspell-en firefox cpupower gvim mlocate net-tools ntp openssh p7zip pkgfile powertop python rfkill rsync sudo unrar unzip wget zip systemd-sysvcompat zsh grml-zsh-config thin-provisioning-tools lvm2 gdb valgrind strace debuginfod xclip volumeicon pulseaudio pulseaudio-alsa pavucontrol'
+    packages+=' alsa-utils aspell-en firefox cpupower gvim mlocate net-tools ntp openssh p7zip pkgfile powertop python rfkill rsync sudo unrar unzip wget zip systemd-sysvcompat zsh grml-zsh-config thin-provisioning-tools lvm2 gdb valgrind strace debuginfod volumeicon pulseaudio pulseaudio-alsa pavucontrol'
 
     # Development packages
     packages+=' autoconf automake libtool make cmake gdb git mercurial subversion tcpdump valgrind freetype2 libx11 libxft libxinerama webkit2gtk gcr glib2'
@@ -354,13 +354,13 @@ install_packages() {
     packages+=' sdl2 sdl2_image sdl2_mixer sdl2_ttf sdl2_net'
 
     # Misc programs
-    packages+=' mplayer pidgin vlc xscreensaver gparted dosfstools ntfsprogs discord mousepad blender gimp steam steam-native-runtime mpv imagemagick w3m lynx galculator gnome-multi-writer bluez bluez-tools bluez-utils blueman'
+    packages+=' mplayer vlc gparted dosfstools ntfsprogs discord blender gimp steam steam-native-runtime mpv imagemagick w3m lynx galculator gnome-multi-writer bluez bluez-tools bluez-utils blueman xclip'
 
     # Xserver
-    packages+=' xorg-apps xorg-server xorg-xinit xterm urxvt'
+    packages+=' xorg-apps xorg-server xorg-xinit mate mate-extra urxvt'
 
     # Login manager and window manager
-    packages+=' xdm-archlinux icewm'
+    packages+=' xdm-archlinux'
 
     # Fonts
     packages+=' ttf-dejavu ttf-liberation'
@@ -426,7 +426,7 @@ install_dwm() {
 install_packer() {
     mkdir /foo
     cd /foo
-    git clone https://aur.archlinux.org/packages/pamac-git.git
+    git clone https://aur.archlinux.org/pikaur.git
     cd pamac-git
     makepkg -si --noconfirm --asroot
     cd /
@@ -434,7 +434,7 @@ install_packer() {
 }
 
 install_aur_packages() {
-    pamac install --noconfirm android-udev google-chrome-stable
+    pikaur -Sy --noconfirm google-chrome
 }
 
 clean_packages() {
@@ -816,7 +816,7 @@ EOF
 set_slim() {
     # Setup xdm (with xsession)
     cat > /etc/skel/.xsession <<EOF
-dwm
+mate-session
 EOF
 
     chown root:root /etc/skel/.xsession
