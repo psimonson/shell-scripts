@@ -391,7 +391,7 @@ install_packages() {
         packages+=' xf86-video-nouveau'
     elif [ "$VIDEO_DRIVER" = "nvidia" ]
     then
-	packages+=' nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader vulkan-headers vulkan-tools'
+	packages+=' nvidia nvidia-utils opencl-nvidia nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader vulkan-headers vulkan-tools'
     elif [ "$VIDEO_DRIVER" = "vbox" ]
     then
 	packages+=' virtualbox-guest-additions'
