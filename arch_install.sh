@@ -57,16 +57,16 @@ HOSTNAME='localhost'
 ENCRYPT_DRIVE='TRUE'
 
 # Passphrase used to encrypt the drive (leave blank to be prompted).
-DRIVE_PASSPHRASE='changeme-passphrase'
+DRIVE_PASSPHRASE='change'
 
 # Root password (leave blank to be prompted).
-ROOT_PASSWORD='changeme-root'
+ROOT_PASSWORD='change'
 
 # Main user to create (by default, added to wheel group, and others).
-USER_NAME='username'
+USER_NAME='change'
 
 # The main user's password (leave blank to be prompted).
-USER_PASSWORD='changeme-user'
+USER_PASSWORD='change'
 
 # System timezone.
 TIMEZONE='America/New_York'
@@ -182,21 +182,6 @@ configure() {
     echo 'Installing additional packages'
     install_packages
 
-#    echo 'Installing dwm and some apps'
-#    install_dwm
-
-    echo 'Installing pikaur'
-    install_packer
-
-#    echo 'Installing AUR packages'
-#    install_aur_packages
-
-    echo 'Clearing package tarballs'
-    clean_packages
-
-    echo 'Updating pkgfile database'
-    update_pkgfile
-
     echo 'Setting hostname'
     set_hostname "$HOSTNAME"
 
@@ -252,6 +237,15 @@ configure() {
     fi
     echo 'Creating initial user'
     create_user "$USER_NAME" "$USER_PASSWORD"
+
+    echo 'Installing pikaur'
+    install_packer
+
+    echo 'Clearing package tarballs'
+    clean_packages
+
+    echo 'Updating pkgfile database'
+    update_pkgfile
 
     echo 'Building locate database'
     update_locate
@@ -429,13 +423,15 @@ install_dwm() {
 }
 
 install_packer() {
+    su - "$USER_NAME"
     mkdir /foo
     cd /foo
     git clone https://aur.archlinux.org/pikaur.git
     cd pikaur
-    makepkg -si --noconfirm --force
+    makepkg -si --noconfirm
     cd /
     rm -rf /foo
+    exit
 }
 
 install_aur_packages() {
@@ -508,23 +504,23 @@ set_modules_load() {
 }
 
 set_initcpio() {
-    local vid
+    local modules
 
     if [ "$VIDEO_DRIVER" = "i915" ]
     then
-        vid='i915'
+        modules=' i915'
     elif [ "$VIDEO_DRIVER" = "nouveau" ]
     then
-        vid='nouveau'
+        modules=' nouveau'
     elif [ "$VIDEO_DRIVER" = "nvidia" ]
     then
-	vid='nvidia'
+	modules=''
     elif [ "$VIDEO_DRIVER" = "radeon" ]
     then
-        vid='radeon'
+        modules=' radeon'
     elif [ "$VIDEO_DRIVER" = "amdgpu" ]
     then
-	vid='amdgpu'
+	modules=' amdgpu'
     fi
 
     local encrypt=""
@@ -542,7 +538,7 @@ set_initcpio() {
 # run.  Advanced users may wish to specify all system modules
 # in this array.  For instance:
 #     MODULES="piix ide_disk reiserfs"
-MODULES="ext4 $vid"
+MODULES="ext4${modules}"
 
 # BINARIES
 # This setting includes any additional binaries a given user may
