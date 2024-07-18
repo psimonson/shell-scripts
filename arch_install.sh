@@ -198,7 +198,7 @@ configure() {
     set_hosts "$HOSTNAME"
 
     echo 'Setting fstab'
-    set_fstab "$TMP_ON_TMPFS" "$boot_dev"
+    set_fstab "$boot_dev"
 
     echo 'Setting initial modules to load'
     set_modules_load
@@ -239,8 +239,8 @@ configure() {
     echo 'Creating initial user'
     create_user "$USER_NAME" "$USER_PASSWORD"
 
-#    echo 'Installing pikaur'
-#    install_packer
+    echo 'Installing pikaur'
+    install_packer
 
     echo 'Clearing package tarballs'
     clean_packages
@@ -339,7 +339,7 @@ install_packages() {
     # Netcfg
     if [ -n "$WIRELESS_DEVICE" ]
     then
-        packages+=' dialog wireless_tools wpa_supplicant networkmanager'
+        packages+=' dialog iw iwd wireless_tools wpa_supplicant networkmanager'
     fi
 
     # SDL 1.2 stuff
@@ -355,7 +355,7 @@ install_packages() {
     packages+=' xorg-apps xorg-server xorg-xinit mate mate-extra rxvt-unicode'
 
     # Login manager and window manager
-    packages+=' xorg-xdm xdm-archlinux'
+    packages+=' xdm-archlinux'
 
     # Fonts
     packages+=' ttf-dejavu ttf-liberation'
@@ -386,7 +386,7 @@ install_packages() {
         packages+=' xf86-video-nouveau'
     elif [ "$VIDEO_DRIVER" = "nvidia" ]
     then
-	packages+=' nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader vulkan-headers vulkan-tools'
+	packages+=' nvidia nvidia-utils lib32-nvidia-utils opencl-nvidia nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader vulkan-headers vulkan-tools'
     elif [ "$VIDEO_DRIVER" = "vbox" ]
     then
 	packages+=' virtualbox-guest-additions'
@@ -427,7 +427,7 @@ install_packer() {
     cat > /home/${USER_NAME}/pikaur.sh <<EOF
 git clone https://aur.archlinux.org/pikaur.git
 cd pikaur
-makepkg -si --noconfirm
+yes | makepkg -si --noconfirm -S
 cd /home/${USER_NAME}
 rm -rf /pikaur
 EOF
@@ -516,7 +516,7 @@ set_initcpio() {
         modules=' nouveau'
     elif [ "$VIDEO_DRIVER" = "nvidia" ]
     then
-	modules=''
+	modules=' nvidia'
     elif [ "$VIDEO_DRIVER" = "radeon" ]
     then
         modules=' radeon'
