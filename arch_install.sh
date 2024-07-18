@@ -57,16 +57,16 @@ HOSTNAME='localhost'
 ENCRYPT_DRIVE='TRUE'
 
 # Passphrase used to encrypt the drive (leave blank to be prompted).
-DRIVE_PASSPHRASE='SBD1972_aw96b6#@$!'
+DRIVE_PASSPHRASE='change'
 
 # Root password (leave blank to be prompted).
-ROOT_PASSWORD='aw96b6'
+ROOT_PASSWORD='change'
 
 # Main user to create (by default, added to wheel group, and others).
-USER_NAME='snake'
+USER_NAME='change'
 
 # The main user's password (leave blank to be prompted).
-USER_PASSWORD='aw96b6'
+USER_PASSWORD='change'
 
 # System timezone.
 TIMEZONE='America/New_York'
@@ -424,17 +424,15 @@ install_dwm() {
 
 install_packer() {
     cat > /home/${USER_NAME}/pikaur.sh <<EOF
-mkdir /foo
-cd /foo
 git clone https://aur.archlinux.org/pikaur.git
 cd pikaur
 makepkg -si --noconfirm
-cd /
-rm -rf /foo
-rm $0
+cd /home/${USER_NAME}
+rm -rf /pikaur
 EOF
 
-    su -u $USER_NAME -c 'sh pikaur.sh'
+    su - $USER_NAME -c 'sh pikaur.sh'
+    rm /home/${USER_NAME}/pikaur.sh
 }
 
 install_aur_packages() {
