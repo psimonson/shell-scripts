@@ -439,6 +439,7 @@ install_packer() {
 }
 
 install_aur_packages() {
+    pikaur -Sy --noconfirm
 }
 
 clean_packages() {
