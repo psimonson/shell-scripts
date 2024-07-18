@@ -834,8 +834,14 @@ create_user() {
     local name="$1"; shift
     local password="$1"; shift
 
-    useradd -m -s /bin/zsh -G adm,systemd-journal,wheel,rfkill,games,network,video,audio,optical,floppy,storage,scanner,power "$name"
-    echo -en "$password\n$password" | passwd "$name"
+    grep -i "$USER_NAME" /etc/passwd
+    if [ "$?" = "1" ]
+    then
+    	useradd -m -s /bin/zsh -G adm,systemd-journal,wheel,rfkill,games,network,video,audio,optical,floppy,storage,scanner,power "$name"
+    	echo -en "$password\n$password" | passwd "$name"
+    else
+	echo "User '$USER_NAME' already exists!"
+    fi
 }
 
 update_locate() {
