@@ -433,7 +433,7 @@ install_packer() {
     cd /foo
     git clone https://aur.archlinux.org/pikaur.git
     cd pikaur
-    makepkg -si --noconfirm
+    makepkg -si --noconfirm --force
     cd /
     rm -rf /foo
 }
