@@ -235,11 +235,12 @@ configure() {
         read USER_PASSWORD
         stty echo
     fi
+
     echo 'Creating initial user'
     create_user "$USER_NAME" "$USER_PASSWORD"
 
-    echo 'Installing pikaur'
-    install_packer
+#    echo 'Installing pikaur'
+#    install_packer
 
     echo 'Clearing package tarballs'
     clean_packages
