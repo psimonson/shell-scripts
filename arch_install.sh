@@ -182,11 +182,11 @@ configure() {
     echo 'Installing additional packages'
     install_packages
 
-    echo 'Installing dwm and some apps'
-    install_dwm
+#    echo 'Installing dwm and some apps'
+#    install_dwm
 
-#    echo 'Installing packer'
-#    install_packer
+    echo 'Installing pikaur'
+    install_packer
 
 #    echo 'Installing AUR packages'
 #    install_aur_packages
@@ -357,10 +357,10 @@ install_packages() {
     packages+=' mplayer vlc gparted dosfstools ntfsprogs discord blender gimp steam steam-native-runtime mpv imagemagick w3m lynx galculator gnome-multi-writer bluez bluez-tools bluez-utils blueman xclip'
 
     # Xserver
-    packages+=' xorg-apps xorg-server xorg-xinit mate mate-extra urxvt'
+    packages+=' xorg-apps xorg-server xorg-xinit mate mate-extra rxvt-unicode'
 
     # Login manager and window manager
-    packages+=' xdm-archlinux'
+    packages+=' xorg-xdm xdm-archlinux'
 
     # Fonts
     packages+=' ttf-dejavu ttf-liberation'
@@ -391,7 +391,7 @@ install_packages() {
         packages+=' xf86-video-nouveau'
     elif [ "$VIDEO_DRIVER" = "nvidia" ]
     then
-	packages+=' nvidia nvidia-utils opencl-nvidia nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader vulkan-headers vulkan-tools'
+	packages+=' nvidia-dkms nvidia-utils opencl-nvidia nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader vulkan-headers vulkan-tools'
     elif [ "$VIDEO_DRIVER" = "vbox" ]
     then
 	packages+=' virtualbox-guest-additions'
@@ -410,31 +410,35 @@ install_packages() {
 }
 
 install_dwm() {
-    mkdir -p /root/src
-    cd /root/src
-    git clone https://git.suckless.org/dwm
-    git clone https://git.suckless.org/st
-    git clone https://git.suckless.org/surf
-    git clone https://git.suckless.org/dmenu
-    make PREFIX=/usr -C dwm clean all install
-    make PREFIX=/usr -C st clean all install
-    make PREFIX=/usr -C surf clean all install
-    make PREFIX=/usr -C dmenu clean all install
-    cd /root
+    if [ ! -x "/root/src" ]
+    then
+        mkdir -p /root/src
+        cd /root/src
+        git clone https://git.suckless.org/dwm
+        git clone https://git.suckless.org/st
+        git clone https://git.suckless.org/surf
+        git clone https://git.suckless.org/dmenu
+        make PREFIX=/usr -C dwm clean all install
+        make PREFIX=/usr -C st clean all install
+        make PREFIX=/usr -C surf clean all install
+        make PREFIX=/usr -C dmenu clean all install
+        cd /root
+    else
+	echo 'Source directory already exists.'
+    fi
 }
 
 install_packer() {
     mkdir /foo
     cd /foo
     git clone https://aur.archlinux.org/pikaur.git
-    cd pamac-git
+    cd pikaur
     makepkg -si --noconfirm --asroot
     cd /
     rm -rf /foo
 }
 
 install_aur_packages() {
-    pikaur -Sy --noconfirm google-chrome
 }
 
 clean_packages() {
