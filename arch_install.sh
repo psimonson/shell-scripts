@@ -57,16 +57,16 @@ HOSTNAME='localhost'
 ENCRYPT_DRIVE='TRUE'
 
 # Passphrase used to encrypt the drive (leave blank to be prompted).
-DRIVE_PASSPHRASE='change'
+DRIVE_PASSPHRASE='SBD1972_aw96b6#@$!'
 
 # Root password (leave blank to be prompted).
-ROOT_PASSWORD='change'
+ROOT_PASSWORD='aw96b6'
 
 # Main user to create (by default, added to wheel group, and others).
-USER_NAME='change'
+USER_NAME='snake'
 
 # The main user's password (leave blank to be prompted).
-USER_PASSWORD='change'
+USER_PASSWORD='aw96b6'
 
 # System timezone.
 TIMEZONE='America/New_York'
@@ -423,15 +423,18 @@ install_dwm() {
 }
 
 install_packer() {
-    su - "$USER_NAME"
-    mkdir /foo
-    cd /foo
-    git clone https://aur.archlinux.org/pikaur.git
-    cd pikaur
-    makepkg -si --noconfirm
-    cd /
-    rm -rf /foo
-    exit
+    cat > /home/${USER_NAME}/pikaur.sh <<EOF
+mkdir /foo
+cd /foo
+git clone https://aur.archlinux.org/pikaur.git
+cd pikaur
+makepkg -si --noconfirm
+cd /
+rm -rf /foo
+rm $0
+EOF
+
+    su -u $USER_NAME -c 'sh pikaur.sh'
 }
 
 install_aur_packages() {
@@ -840,7 +843,7 @@ create_user() {
     	useradd -m -s /bin/zsh -G adm,systemd-journal,wheel,rfkill,games,network,video,audio,optical,floppy,storage,scanner,power "$name"
     	echo -en "$password\n$password" | passwd "$name"
     else
-	echo "User '$USER_NAME' already exists!"
+        echo "User '$USER_NAME' already exists!"
     fi
 }
 
