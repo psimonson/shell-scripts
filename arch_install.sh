@@ -331,7 +331,7 @@ install_packages() {
     local packages=''
 
     # General utilities/libraries
-    packages+=' alsa-utils aspell-en firefox cpupower gvim mlocate net-tools ntp openssh p7zip pkgfile powertop python rfkill rsync sudo unrar unzip wget zip systemd-sysvcompat zsh grml-zsh-config thin-provisioning-tools lvm2 gdb valgrind strace debuginfod volumeicon pulseaudio pulseaudio-alsa pavucontrol linux-headers'
+    packages+=' alsa-utils aspell-en firefox cpupower gvim mlocate net-tools ntp openssh p7zip pkgfile powertop python rfkill rsync sudo unrar unzip wget zip systemd-sysvcompat zsh grml-zsh-config thin-provisioning-tools lvm2 gdb valgrind strace debuginfod volumeicon pulseaudio pulseaudio-alsa pavucontrol linux-headers plymouth'
 
     # Development packages
     packages+=' autoconf automake libtool make cmake gdb git mercurial subversion tcpdump valgrind freetype2 libx11 libxft libxinerama webkit2gtk gcr glib2'
