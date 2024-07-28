@@ -106,11 +106,13 @@ setup() {
 
     if [ -n "$NVME" ]
     then
-	    boot_dev="$DRIVE"p1
-	    lvm_dev="$DRIVE"p2
+	    esp_dev="$DRIVE"p1
+	    boot_dev="$DRIVE"p2
+	    lvm_dev="$DRIVE"p3
     else
-	    boot_dev="$DRIVE"1
-	    lvm_dev="$DRIVE"2
+	    esp_dev="$DRIVE"1
+	    boot_dev="$DRIVE"2
+	    lvm_dev="$DRIVE"3
     fi
 
     echo 'Creating partitions'
@@ -139,10 +141,10 @@ setup() {
     setup_lvm "$lvm_part" vg00
 
     echo 'Formatting filesystems'
-    format_filesystems "$boot_dev"
+    format_filesystems
 
     echo 'Mounting filesystems'
-    mount_filesystems "$boot_dev"
+    mount_filesystems
 
     echo 'Installing base system'
     install_base
@@ -168,11 +170,13 @@ configure() {
 
     if [ -n "$NVME" ]
     then
-	    boot_dev="$DRIVE"p1
-	    lvm_dev="$DRIVE"p2
+	    esp_dev="$DRIVE"p1
+	    boot_dev="$DRIVE"p2
+	    lvm_dev="$DRIVE"p3
     else
-	    boot_dev="$DRIVE"1
-	    lvm_dev="$DRIVE"2
+	    esp_dev="$DRIVE"1
+	    boot_dev="$DRIVE"2
+	    lvm_dev="$DRIVE"3
     fi
 
     echo 'Redoing pacman.conf'
@@ -198,7 +202,7 @@ configure() {
     set_hosts "$HOSTNAME"
 
     echo 'Setting fstab'
-    set_fstab "$boot_dev"
+    set_fstab
 
     echo 'Setting initial modules to load'
     set_modules_load
@@ -210,7 +214,7 @@ configure() {
     set_daemons "$TMP_ON_TMPFS"
 
     echo 'Configuring bootloader'
-    set_syslinux "$DRIVE"
+    set_syslinux
 
     echo 'Configuring sudo'
     set_sudoers
@@ -260,10 +264,11 @@ partition_drive() {
     # 100 MB /boot partition, everything else under LVM
     parted -s "$dev" \
         mklabel msdos \
-        mkpart primary ext2 1 2G \
-        mkpart primary ext2 2G 100% \
-        set 1 boot on \
-        set 2 LVM on
+	mkpart primary esp 1 500M \
+        mkpart primary ext2 500M 2500M \
+        mkpart primary ext2 2500M 100% \
+        set 2 boot on \
+        set 3 LVM on
 }
 
 encrypt_drive() {
@@ -283,7 +288,7 @@ setup_lvm() {
     vgcreate "$volgroup" "$partition"
 
     # Create a 1GB swap partition
-    lvcreate -C y -L32G "$volgroup" -n swap
+    lvcreate -C y -L "$SWAP_SIZE" "$volgroup" -n swap
 
     # Use the rest of the space for root
     lvcreate -l '+100%FREE' "$volgroup" -n root
@@ -293,19 +298,42 @@ setup_lvm() {
 }
 
 format_filesystems() {
-    local boot_dev="$1"; shift
+    local esp_dev=""
+    local boot_dev=""
 
+    if [ -n "$NVME" ]
+    then
+	    esp_dev="$DRIVE"p1
+	    boot_dev="$DRIVE"p2
+    else
+	    esp_dev="$DRIVE"1
+	    boot_dev="$DRIVE"2
+    fi
+
+    mkfs.vfat -F 32 -L EFI "$esp_dev"
     mkfs.ext2 -L boot "$boot_dev"
     mkfs.ext4 -L root /dev/vg00/root
     mkswap /dev/vg00/swap
 }
 
 mount_filesystems() {
-    local boot_dev="$1"; shift
+    local esp_dev=""
+    local boot_dev=""
+
+    if [ -n "$NVME" ]
+    then
+	    esp_dev="$DRIVE"p1
+	    boot_dev="$DRIVE"p2
+    else
+	    esp_dev="$DRIVE"1
+	    boot_dev="$DRIVE"2
+    fi
 
     mount /dev/vg00/root /mnt
     mkdir /mnt/boot
     mount "$boot_dev" /mnt/boot
+    mkdir /mnt/boot/esp
+    mount "$esp_dev" /mnt/boot/esp
     swapon /dev/vg00/swap
 }
 
@@ -317,6 +345,7 @@ install_base() {
 }
 
 unmount_filesystems() {
+    umount /mnt/boot/esp
     umount /mnt/boot
     umount /mnt
     swapoff /dev/vg00/swap
@@ -349,10 +378,10 @@ install_packages() {
     packages+=' sdl2 sdl2_image sdl2_mixer sdl2_ttf sdl2_net'
 
     # Misc programs
-    packages+=' mplayer vlc gparted dosfstools ntfsprogs discord blender gimp steam steam-native-runtime mpv imagemagick w3m lynx galculator gnome-multi-writer bluez bluez-tools bluez-utils blueman xclip'
+    packages+=' mplayer vlc gparted dosfstools ntfsprogs discord blender gimp steam mpv imagemagick w3m lynx galculator gnome-multi-writer bluez bluez-tools bluez-utils blueman xclip'
 
     # Xserver
-    packages+=' xorg-apps xorg-server xorg-xinit mate mate-extra rxvt-unicode'
+    packages+=' xorg-apps xorg-server xorg-xinit mate mate-extra'
 
     # Login manager and window manager
     packages+=' xdm-archlinux'
@@ -429,7 +458,7 @@ git clone https://aur.archlinux.org/pikaur.git
 cd pikaur
 yes | makepkg -si --noconfirm -S
 cd /home/${USER_NAME}
-rm -rf /pikaur
+rm -rf /home/${USER_NAME}/pikaur
 EOF
 
     su - $USER_NAME -c 'sh pikaur.sh'
@@ -481,7 +510,17 @@ EOF
 }
 
 set_fstab() {
-    local boot_dev="$1"; shift
+    local esp_dev=""
+    local boot_dev=""
+
+    if [ -n "$NVME" ]
+    then
+	    esp_dev="$DRIVE"p1
+	    boot_dev="$DRIVE"p2
+    else
+	    esp_dev="$DRIVE"1
+	    boot_dev="$DRIVE"2
+    fi
 
     cat > /etc/fstab <<EOF
 #
@@ -493,6 +532,7 @@ set_fstab() {
 /dev/vg00/root /    ext4  defaults,relatime 0 1
 
 $boot_dev /boot ext2 defaults,relatime 0 2
+$esp_dev /boot/esp vfat defaults,relatime 0 3
 EOF
 }
 
@@ -627,9 +667,9 @@ set_syslinux() {
 
     if [ -n "$NVME" ]
     then
-	    lvm_dev="$DRIVE"p2
+	    lvm_dev="$DRIVE"p3
     else
-	    lvm_dev="$DRIVE"2
+	    lvm_dev="$DRIVE"3
     fi
 
     cat > /boot/syslinux/syslinux.cfg <<EOF
