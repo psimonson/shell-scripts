@@ -302,7 +302,7 @@ format_filesystems() {
 	    boot_dev="$DRIVE"1
     fi
 
-    mkfs.fat -F 32 -L boot "$boot_dev"
+    mkfs.fat -F 32 "$boot_dev"
     mkfs.ext4 -L root /dev/vg00/root
     mkswap /dev/vg00/swap
 }
