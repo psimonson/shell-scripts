@@ -106,11 +106,9 @@ setup() {
 
     if [ -n "$NVME" ]
     then
-	    esp_dev="$DRIVE"p1
 	    boot_dev="$DRIVE"p2
 	    lvm_dev="$DRIVE"p3
     else
-	    esp_dev="$DRIVE"1
 	    boot_dev="$DRIVE"2
 	    lvm_dev="$DRIVE"3
     fi
@@ -170,11 +168,9 @@ configure() {
 
     if [ -n "$NVME" ]
     then
-	    esp_dev="$DRIVE"p1
 	    boot_dev="$DRIVE"p2
 	    lvm_dev="$DRIVE"p3
     else
-	    esp_dev="$DRIVE"1
 	    boot_dev="$DRIVE"2
 	    lvm_dev="$DRIVE"3
     fi
@@ -264,11 +260,10 @@ partition_drive() {
     # 100 MB /boot partition, everything else under LVM
     parted -s "$dev" \
         mklabel msdos \
-	mkpart primary esp 1 500M \
-        mkpart primary ext2 500M 2500M \
-        mkpart primary ext2 2500M 100% \
-        set 2 boot on \
-        set 3 LVM on
+	mkpart primary fat32 1 2G \
+        mkpart primary ext2 2G 100% \
+        set 1 esp on \
+        set 2 LVM on
 }
 
 encrypt_drive() {
@@ -298,50 +293,40 @@ setup_lvm() {
 }
 
 format_filesystems() {
-    local esp_dev=""
     local boot_dev=""
 
     if [ -n "$NVME" ]
     then
-	    esp_dev="$DRIVE"p1
-	    boot_dev="$DRIVE"p2
+	    boot_dev="$DRIVE"p1
     else
-	    esp_dev="$DRIVE"1
-	    boot_dev="$DRIVE"2
+	    boot_dev="$DRIVE"1
     fi
 
-    mkfs.vfat -F 32 -L EFI "$esp_dev"
-    mkfs.ext2 -L boot "$boot_dev"
+    mkfs.fat -F 32 -L boot "$boot_dev"
     mkfs.ext4 -L root /dev/vg00/root
     mkswap /dev/vg00/swap
 }
 
 mount_filesystems() {
-    local esp_dev=""
     local boot_dev=""
 
     if [ -n "$NVME" ]
     then
-	    esp_dev="$DRIVE"p1
-	    boot_dev="$DRIVE"p2
+	    boot_dev="$DRIVE"p1
     else
-	    esp_dev="$DRIVE"1
-	    boot_dev="$DRIVE"2
+	    boot_dev="$DRIVE"1
     fi
 
     mount /dev/vg00/root /mnt
     mkdir /mnt/boot
     mount "$boot_dev" /mnt/boot
-    mkdir /mnt/boot/esp
-    mount "$esp_dev" /mnt/boot/esp
     swapon /dev/vg00/swap
 }
 
 install_base() {
     echo 'Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch' >> /etc/pacman.d/mirrorlist
 
-    pacstrap /mnt base base-devel
-    pacstrap /mnt syslinux
+    yes | pacstrap -S /mnt base base-devel linux linux-firmware wireless_tools iwd wpa_supplicant NetworkManager networkmanager networkmanager-applet systemd-boot efibootmgr
 }
 
 unmount_filesystems() {
@@ -368,7 +353,7 @@ install_packages() {
     # Netcfg
     if [ -n "$WIRELESS_DEVICE" ]
     then
-        packages+=' dialog iw iwd wireless_tools wpa_supplicant networkmanager'
+        packages+=' dialog iw'
     fi
 
     # SDL 1.2 stuff
@@ -510,16 +495,13 @@ EOF
 }
 
 set_fstab() {
-    local esp_dev=""
     local boot_dev=""
 
     if [ -n "$NVME" ]
     then
-	    esp_dev="$DRIVE"p1
-	    boot_dev="$DRIVE"p2
+	    boot_dev="$DRIVE"p1
     else
-	    esp_dev="$DRIVE"1
-	    boot_dev="$DRIVE"2
+	    boot_dev="$DRIVE"1
     fi
 
     cat > /etc/fstab <<EOF
@@ -531,8 +513,7 @@ set_fstab() {
 /dev/vg00/swap none swap  sw                0 0
 /dev/vg00/root /    ext4  defaults,relatime 0 1
 
-$boot_dev /boot ext2 defaults,relatime 0 2
-$esp_dev /boot/esp vfat defaults,relatime 0 3
+$boot_dev /boot vfat defaults,relatime 0 2
 EOF
 }
 
@@ -667,93 +648,25 @@ set_syslinux() {
 
     if [ -n "$NVME" ]
     then
-	    lvm_dev="$DRIVE"p3
+	    lvm_dev="$DRIVE"p2
     else
-	    lvm_dev="$DRIVE"3
+	    lvm_dev="$DRIVE"2
     fi
 
-    cat > /boot/syslinux/syslinux.cfg <<EOF
-# Config file for Syslinux -
-# /boot/syslinux/syslinux.cfg
-#
-# Comboot modules:
-#   * menu.c32 - provides a text menu
-#   * vesamenu.c32 - provides a graphical menu
-#   * chain.c32 - chainload MBRs, partition boot sectors, Windows bootloaders
-#   * hdt.c32 - hardware detection tool
-#   * reboot.c32 - reboots the system
-#
-# To Use: Copy the respective files from /usr/lib/syslinux to /boot/syslinux.
-# If /usr and /boot are on the same file system, symlink the files instead
-# of copying them.
-#
-# If you do not use a menu, a 'boot:' prompt will be shown and the system
-# will boot automatically after 5 seconds.
-#
-# Please review the wiki: https://wiki.archlinux.org/index.php/Syslinux
-# The wiki provides further configuration examples
-
-DEFAULT arch
-PROMPT 0        # Set to 1 if you always want to display the boot: prompt
-TIMEOUT 50
-# You can create syslinux keymaps with the keytab-lilo tool
-#KBDMAP de.ktl
-
-# Menu Configuration
-# Either menu.c32 or vesamenu32.c32 must be copied to /boot/syslinux
-#UI menu.c32
-UI vesamenu.c32
-
-# Refer to http://syslinux.zytor.com/wiki/index.php/Doc/menu
-MENU TITLE Arch Linux
-#MENU BACKGROUND splash.png
-MENU COLOR border       30;44   #40ffffff #a0000000 std
-MENU COLOR title        1;36;44 #9033ccff #a0000000 std
-MENU COLOR sel          7;37;40 #e0ffffff #20ffffff all
-MENU COLOR unsel        37;44   #50ffffff #a0000000 std
-MENU COLOR help         37;40   #c0ffffff #a0000000 std
-MENU COLOR timeout_msg  37;40   #80ffffff #00000000 std
-MENU COLOR timeout      1;37;40 #c0ffffff #00000000 std
-MENU COLOR msg07        37;40   #90ffffff #a0000000 std
-MENU COLOR tabmsg       31;40   #30ffffff #00000000 std
-
-# boot sections follow
-#
-# TIP: If you want a 1024x768 framebuffer, add "vga=773" to your kernel line.
-#
-#-*
-
-LABEL arch
-    MENU LABEL Arch Linux
-    LINUX ../vmlinuz-linux
-    APPEND root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
-    INITRD ../initramfs-linux.img
-
-LABEL archfallback
-    MENU LABEL Arch Linux Fallback
-    LINUX ../vmlinuz-linux
-    APPEND root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
-    INITRD ../initramfs-linux-fallback.img
-
-#LABEL windows
-#        MENU LABEL Windows
-#        COM32 chain.c32
-#        APPEND hd0 1
-
-LABEL hdt
-        MENU LABEL HDT (Hardware Detection Tool)
-        COM32 hdt.c32
-
-LABEL reboot
-        MENU LABEL Reboot
-        COM32 reboot.c32
-
-LABEL poweroff
-        MENU LABEL Poweroff
-        COM32 poweroff.c32
+    cat > /boot/loader/entries/arch.conf <<EOF
+title Arch Linux
+linux /boot/vmlinuz-linux
+initrd /boot/initramfs-linux.img
+options root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
+EOF
+    cat > /boot/loader/entries/arch-fallback.conf <<EOF
+title Arch Linux
+linux /boot/vmlinuz-linux
+initrd /boot/initramfs-linux-fallback.img
+options root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
 EOF
 
-    syslinux-install_update -iam
+    bootctl --esp-path=/boot install
 }
 
 set_sudoers() {
