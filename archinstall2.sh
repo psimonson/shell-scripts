@@ -326,7 +326,7 @@ mount_filesystems() {
 install_base() {
     echo 'Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch' >> /etc/pacman.d/mirrorlist
 
-    yes | pacstrap -S /mnt base base-devel linux linux-headers linux-firmware wireless_tools iwd wpa_supplicant NetworkManager networkmanager networkmanager-applet systemd-boot efibootmgr
+    pacstrap /mnt base base-devel linux linux-headers linux-firmware wireless_tools iwd wpa_supplicant NetworkManager networkmanager networkmanager-applet systemd-boot efibootmgr
 }
 
 unmount_filesystems() {
