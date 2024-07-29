@@ -106,11 +106,11 @@ setup() {
 
     if [ -n "$NVME" ]
     then
-	    boot_dev="$DRIVE"p2
-	    lvm_dev="$DRIVE"p3
+	    boot_dev="$DRIVE"p1
+	    lvm_dev="$DRIVE"p2
     else
-	    boot_dev="$DRIVE"2
-	    lvm_dev="$DRIVE"3
+	    boot_dev="$DRIVE"1
+	    lvm_dev="$DRIVE"2
     fi
 
     echo 'Creating partitions'
@@ -168,11 +168,11 @@ configure() {
 
     if [ -n "$NVME" ]
     then
-	    boot_dev="$DRIVE"p2
-	    lvm_dev="$DRIVE"p3
+	    boot_dev="$DRIVE"p1
+	    lvm_dev="$DRIVE"p2
     else
-	    boot_dev="$DRIVE"2
-	    lvm_dev="$DRIVE"3
+	    boot_dev="$DRIVE"1
+	    lvm_dev="$DRIVE"2
     fi
 
     echo 'Redoing pacman.conf'
@@ -283,7 +283,7 @@ setup_lvm() {
     vgcreate "$volgroup" "$partition"
 
     # Create a 1GB swap partition
-    lvcreate -C y -L "$SWAP_SIZE" "$volgroup" -n swap
+    lvcreate -C y -L 32G "$volgroup" -n swap
 
     # Use the rest of the space for root
     lvcreate -l '+100%FREE' "$volgroup" -n root
@@ -326,11 +326,10 @@ mount_filesystems() {
 install_base() {
     echo 'Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch' >> /etc/pacman.d/mirrorlist
 
-    yes | pacstrap -S /mnt base base-devel linux linux-firmware wireless_tools iwd wpa_supplicant NetworkManager networkmanager networkmanager-applet systemd-boot efibootmgr
+    yes | pacstrap -S /mnt base base-devel linux linux-headers linux-firmware wireless_tools iwd wpa_supplicant NetworkManager networkmanager networkmanager-applet systemd-boot efibootmgr
 }
 
 unmount_filesystems() {
-    umount /mnt/boot/esp
     umount /mnt/boot
     umount /mnt
     swapoff /dev/vg00/swap
@@ -345,7 +344,7 @@ install_packages() {
     local packages=''
 
     # General utilities/libraries
-    packages+=' alsa-utils aspell-en firefox cpupower gvim mlocate net-tools ntp openssh p7zip pkgfile powertop python rfkill rsync sudo unrar unzip wget zip systemd-sysvcompat zsh grml-zsh-config thin-provisioning-tools lvm2 gdb valgrind strace debuginfod pulseaudio pulseaudio-alsa pavucontrol linux-headers plymouth'
+    packages+=' alsa-utils aspell-en firefox cpupower gvim mlocate net-tools ntp openssh p7zip pkgfile powertop python rfkill rsync sudo unrar unzip wget zip systemd-sysvcompat zsh grml-zsh-config thin-provisioning-tools lvm2 gdb valgrind strace debuginfod pulseaudio pulseaudio-alsa pavucontrol plymouth'
 
     # Development packages
     packages+=' autoconf automake libtool make cmake gdb git mercurial subversion tcpdump tcpkill valgrind freetype2 libx11 libxft libxinerama webkit2gtk gcr glib2'
@@ -561,7 +560,7 @@ set_initcpio() {
 # run.  Advanced users may wish to specify all system modules
 # in this array.  For instance:
 #     MODULES="piix ide_disk reiserfs"
-MODULES="ext4${modules}"
+MODULES="vfat ext4${modules}"
 
 # BINARIES
 # This setting includes any additional binaries a given user may
@@ -652,6 +651,13 @@ set_syslinux() {
     else
 	    lvm_dev="$DRIVE"2
     fi
+
+    cat > /boot/loader/loader.conf <<EOF
+default arch.conf
+timeout 4
+console-mode max
+editor no
+EOF
 
     cat > /boot/loader/entries/arch.conf <<EOF
 title Arch Linux
