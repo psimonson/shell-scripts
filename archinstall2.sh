@@ -107,10 +107,10 @@ setup() {
     if [ -n "$NVME" ]
     then
 	    boot_dev="$DRIVE"p1
-	    lvm_dev="$DRIVE"p2
+	    lvm_dev="$DRIVE"p1
     else
 	    boot_dev="$DRIVE"1
-	    lvm_dev="$DRIVE"2
+	    lvm_dev="$DRIVE"1
     fi
 
     echo 'Creating partitions'
@@ -163,18 +163,6 @@ setup() {
 }
 
 configure() {
-    local boot_dev=""
-    local lvm_dev=""
-
-    if [ -n "$NVME" ]
-    then
-	    boot_dev="$DRIVE"p1
-	    lvm_dev="$DRIVE"p2
-    else
-	    boot_dev="$DRIVE"1
-	    lvm_dev="$DRIVE"2
-    fi
-
     echo 'Redoing pacman.conf'
     sed -i '90s/\#//' /etc/pacman.conf
     sed -i '91s/\#//' /etc/pacman.conf
@@ -260,7 +248,7 @@ partition_drive() {
     # 100 MB /boot partition, everything else under LVM
     parted -s "$dev" \
         mklabel msdos \
-	mkpart primary fat32 1 2G \
+	mkpart primary efi 1 2G \
         mkpart primary ext2 2G 100% \
         set 1 esp on \
         set 2 LVM on
@@ -282,6 +270,9 @@ setup_lvm() {
     pvcreate "$partition"
     vgcreate "$volgroup" "$partition"
 
+    # Create a 2GB boot partition
+    lvcreate -C y -L 2G "$volgroup" -n boot
+
     # Create a 1GB swap partition
     lvcreate -C y -L 32G "$volgroup" -n swap
 
@@ -293,33 +284,15 @@ setup_lvm() {
 }
 
 format_filesystems() {
-    local boot_dev=""
-
-    if [ -n "$NVME" ]
-    then
-	    boot_dev="$DRIVE"p1
-    else
-	    boot_dev="$DRIVE"1
-    fi
-
-    mkfs.fat -F 32 "$boot_dev"
+    mkfs.fat -F 32 /dev/vg00/boot
     mkfs.ext4 -L root /dev/vg00/root
     mkswap /dev/vg00/swap
 }
 
 mount_filesystems() {
-    local boot_dev=""
-
-    if [ -n "$NVME" ]
-    then
-	    boot_dev="$DRIVE"p1
-    else
-	    boot_dev="$DRIVE"1
-    fi
-
     mount /dev/vg00/root /mnt
     mkdir /mnt/boot
-    mount "$boot_dev" /mnt/boot
+    mount /dev/vg00/boot /mnt/boot
     swapon /dev/vg00/swap
 }
 
@@ -347,7 +320,7 @@ install_packages() {
     packages+=' alsa-utils aspell-en firefox cpupower gvim mlocate net-tools ntp openssh p7zip pkgfile powertop python rfkill rsync sudo unrar unzip wget zip systemd-sysvcompat zsh grml-zsh-config thin-provisioning-tools lvm2 gdb valgrind strace debuginfod pulseaudio pulseaudio-alsa pavucontrol plymouth'
 
     # Development packages
-    packages+=' autoconf automake libtool make cmake gdb git mercurial subversion tcpdump tcpkill valgrind freetype2 libx11 libxft libxinerama webkit2gtk gcr glib2'
+    packages+=' autoconf automake libtool make cmake gdb git mercurial subversion tcpdump valgrind freetype2 libx11 libxft libxinerama webkit2gtk gcr glib2'
 
     # Netcfg
     if [ -n "$WIRELESS_DEVICE" ]
@@ -494,15 +467,6 @@ EOF
 }
 
 set_fstab() {
-    local boot_dev=""
-
-    if [ -n "$NVME" ]
-    then
-	    boot_dev="$DRIVE"p1
-    else
-	    boot_dev="$DRIVE"1
-    fi
-
     cat > /etc/fstab <<EOF
 #
 # /etc/fstab: static file system information
@@ -512,7 +476,7 @@ set_fstab() {
 /dev/vg00/swap none swap  sw                0 0
 /dev/vg00/root /    ext4  defaults,relatime 0 1
 
-$boot_dev /boot vfat defaults,relatime 0 2
+/dev/vg00/boot /boot vfat defaults,relatime 0 2
 EOF
 }
 
@@ -647,10 +611,12 @@ set_syslinux() {
 
     if [ -n "$NVME" ]
     then
-	    lvm_dev="$DRIVE"p2
+	    lvm_dev="$DRIVE"p1
     else
-	    lvm_dev="$DRIVE"2
+	    lvm_dev="$DRIVE"1
     fi
+
+    bootctl --esp-path=/boot install
 
     cat > /boot/loader/loader.conf <<EOF
 default arch.conf
@@ -671,8 +637,6 @@ linux /boot/vmlinuz-linux
 initrd /boot/initramfs-linux-fallback.img
 options root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
 EOF
-
-    bootctl --esp-path=/boot install
 }
 
 set_sudoers() {
