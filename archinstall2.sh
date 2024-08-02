@@ -425,16 +425,16 @@ install_dwm() {
 }
 
 install_packer() {
-    cat > /home/${USER_NAME}/pikaur.sh <<EOF
+    cat > /home/$USER_NAME/pikaur.sh <<EOF
 git clone https://aur.archlinux.org/pikaur.git
 cd pikaur
 yes | makepkg -si --noconfirm -S
-cd /home/${USER_NAME}
-rm -rf /home/${USER_NAME}/pikaur
+cd /home/$USER_NAME
+rm -rf /home/$USER_NAME/pikaur
 EOF
 
     su - $USER_NAME -c 'sh pikaur.sh'
-    rm /home/${USER_NAME}/pikaur.sh
+    rm /home/$USER_NAME/pikaur.sh
 }
 
 install_aur_packages() {
@@ -786,14 +786,8 @@ create_user() {
     local name="$1"; shift
     local password="$1"; shift
 
-    grep -i "$USER_NAME" /etc/passwd
-    if [ "$?" = "1" ]
-    then
-    	useradd -m -s /bin/zsh -G adm,systemd-journal,wheel,rfkill,games,network,video,audio,optical,floppy,storage,scanner,power "$name"
-    	echo -en "$password\n$password" | passwd "$name"
-    else
-        echo "User '$USER_NAME' already exists!"
-    fi
+    useradd -m -s /bin/zsh -G adm,systemd-journal,wheel,rfkill,games,network,video,audio,optical,floppy,storage,scanner,power "$name"
+    echo -en "$password\n$password" | passwd "$name"
 }
 
 update_locate() {
