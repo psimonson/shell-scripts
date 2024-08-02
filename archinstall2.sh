@@ -247,8 +247,8 @@ partition_drive() {
 
     # 100 MB /boot partition, everything else under LVM
     parted -s "$dev" \
-        mklabel msdos \
-	mkpart primary efi 1 2G \
+        mklabel gpt \
+	mkpart primary fat32 1 2G \
         mkpart primary ext2 2G 100% \
         set 1 esp on \
         set 2 LVM on
@@ -284,15 +284,33 @@ setup_lvm() {
 }
 
 format_filesystems() {
-    mkfs.fat -F 32 /dev/vg00/boot
+    local boot_dev=""
+
+    if [ -n "$NVME" ]
+    then
+	    boot_dev="$DRIVE"p1
+    else
+	    boot_dev="$DRIVE"1
+    fi
+
+    mkfs.fat -F 32 "$boot_dev"
     mkfs.ext4 -L root /dev/vg00/root
     mkswap /dev/vg00/swap
 }
 
 mount_filesystems() {
+    local boot_dev=""
+
+    if [ -n "$NVME" ]
+    then
+	    boot_dev="$DRIVE"p1
+    else
+	    boot_dev="$DRIVE"1
+    fi
+
     mount /dev/vg00/root /mnt
     mkdir /mnt/boot
-    mount /dev/vg00/boot /mnt/boot
+    mount "$boot_dev" /mnt/boot
     swapon /dev/vg00/swap
 }
 
@@ -467,6 +485,15 @@ EOF
 }
 
 set_fstab() {
+    local boot_dev=""
+
+    if [ -n "$NVME" ]
+    then
+	    boot_dev="$DRIVE"p1
+    else
+	    boot_dev="$DRIVE"1
+    fi
+
     cat > /etc/fstab <<EOF
 #
 # /etc/fstab: static file system information
@@ -476,7 +503,7 @@ set_fstab() {
 /dev/vg00/swap none swap  sw                0 0
 /dev/vg00/root /    ext4  defaults,relatime 0 1
 
-/dev/vg00/boot /boot vfat defaults,relatime 0 2
+$boot_dev /boot vfat defaults,relatime 0 2
 EOF
 }
 
@@ -607,13 +634,16 @@ set_daemons() {
 }
 
 set_syslinux() {
+    local boot_dev=""
     local lvm_dev=""
 
     if [ -n "$NVME" ]
     then
-	    lvm_dev="$DRIVE"p1
+	    boot_dev="$DRIVE"p1
+	    lvm_dev="$DRIVE"p2
     else
-	    lvm_dev="$DRIVE"1
+	    boot_dev="$DRIVE"1
+	    lvm_dev="$DRIVE"2
     fi
 
     bootctl --esp-path=/boot install
