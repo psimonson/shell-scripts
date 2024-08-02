@@ -107,10 +107,10 @@ setup() {
     if [ -n "$NVME" ]
     then
 	    boot_dev="$DRIVE"p1
-	    lvm_dev="$DRIVE"p1
+	    lvm_dev="$DRIVE"p2
     else
 	    boot_dev="$DRIVE"1
-	    lvm_dev="$DRIVE"1
+	    lvm_dev="$DRIVE"2
     fi
 
     echo 'Creating partitions'
