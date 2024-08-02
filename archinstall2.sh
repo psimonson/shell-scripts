@@ -270,9 +270,6 @@ setup_lvm() {
     pvcreate "$partition"
     vgcreate "$volgroup" "$partition"
 
-    # Create a 2GB boot partition
-    lvcreate -C y -L 2G "$volgroup" -n boot
-
     # Create a 1GB swap partition
     lvcreate -C y -L 32G "$volgroup" -n swap
 
