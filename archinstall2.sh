@@ -642,9 +642,10 @@ set_syslinux() {
     fi
 
     bootctl --esp-path=/boot install
+    efibootmgr -c -d "$DRIVE" -p 1 -L "Arch Linux" -l /boot/EFI/BOOT/BOOTX64.EFI
 
     cat > /boot/loader/loader.conf <<EOF
-default arch.conf
+default arch
 timeout 4
 console-mode max
 editor no
@@ -662,8 +663,6 @@ linux /boot/vmlinuz-linux
 initrd /boot/initramfs-linux-fallback.img
 options root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
 EOF
-
-    bootctl --esp-path=/boot update
 }
 
 set_sudoers() {
