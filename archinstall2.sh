@@ -426,6 +426,7 @@ install_dwm() {
 
 install_packer() {
     cat > /home/$USER_NAME/pikaur.sh <<EOF
+cd /home/$USER_NAME
 git clone https://aur.archlinux.org/pikaur.git
 cd pikaur
 yes | makepkg -si --noconfirm -S
