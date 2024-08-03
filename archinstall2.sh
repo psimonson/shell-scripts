@@ -641,28 +641,30 @@ set_syslinux() {
 	    lvm_dev="$DRIVE"2
     fi
 
-    bootctl --esp-path=/boot install
-    efibootmgr -c -d "$DRIVE" -p 1 -L "Arch Linux" -l /boot/EFI/BOOT/BOOTX64.EFI
+    bootctl install
 
     cat > /boot/loader/loader.conf <<EOF
 default arch
 timeout 4
-console-mode max
+#console-mode keep
 editor no
 EOF
 
     cat > /boot/loader/entries/arch.conf <<EOF
 title Arch Linux
-linux /boot/vmlinuz-linux
-initrd /boot/initramfs-linux.img
+linux vmlinuz-linux
+initrd initramfs-linux.img
 options root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
 EOF
     cat > /boot/loader/entries/arch-fallback.conf <<EOF
-title Arch Linux
-linux /boot/vmlinuz-linux
-initrd /boot/initramfs-linux-fallback.img
+title Arch Linux Fallback
+linux vmlinuz-linux
+initrd initramfs-linux-fallback.img
 options root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
 EOF
+
+    bootctl remove
+    bootctl install
 }
 
 set_sudoers() {
