@@ -632,15 +632,12 @@ set_daemons() {
 }
 
 set_syslinux() {
-    local boot_dev=""
     local lvm_dev=""
 
     if [ -n "$NVME" ]
     then
-	    boot_dev="$DRIVE"p1
 	    lvm_dev="$DRIVE"p2
     else
-	    boot_dev="$DRIVE"1
 	    lvm_dev="$DRIVE"2
     fi
 
@@ -665,6 +662,8 @@ linux /boot/vmlinuz-linux
 initrd /boot/initramfs-linux-fallback.img
 options root=/dev/vg00/root resume=/dev/vg00/swap cryptdevice=$lvm_dev:lvm rw
 EOF
+
+    bootctl --esp-path=/boot update
 }
 
 set_sudoers() {
